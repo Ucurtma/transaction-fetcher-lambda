@@ -1,12 +1,11 @@
+require('dotenv').config();
 const axios = require('axios').default;
 const cheerio = require('cheerio');
 const { ethers } = require("ethers");
 const moment = require('moment');
-
-const etherScanKey = '5A7SXDPQZ7M4GN4W2VX5IH9CTIC59WTJBZ';
-
+const { fetchCampaigns, updateCampaign } = require('./lib/data/campaigns');
 const fetchEthereumSupports = async (address) => {
-    const response = await axios.get(`https://api.etherscan.io/api?module=account&action=tokentx&address=${campaign.ethereumAddress}&startblock=0&endblock=999999999&sort=desc&apikey=${etherScanKey}`);
+    const response = await axios.get(`https://api.etherscan.io/api?module=account&action=tokentx&address=${campaign.ethereumAddress}&startblock=0&endblock=999999999&sort=desc&apikey=${process.env.ETHERSCAN_KEY}`);
 
     return response.data.result.map(transaction => {
         return {
@@ -57,50 +56,26 @@ const fetchAvalancheSupports = async (address) => {
     return transactions;
 };
 
-const fetchCampaigns = async () => {
-    const query = `
-        query {
-          campaigns(start: 0, end: 100, campaignType: LongTerm) {
-            campaigns {
-              campaignId
-              ethereumAddress
-            }
-        }
-        }
-    `;
-
-    const response = await axios.post('https://api.ucurtmaprojesi.com/graphql', {
-        query: query
-    });
-
-    return response.data.data.campaigns.campaigns;
-};
-
 const main = async () => {
     const campaigns = await fetchCampaigns();
-    const supportsByCampaignId = [];
 
-    for (campaign of campaigns) {
-        let supports = [];
+    for (campaign of campaigns.filter(c => c.isActive)) {
+        campaign.transactions = [];
 
         if (campaign.ethereumAddress) {
             const ethSupports = await fetchEthereumSupports(campaign.ethereumAddress);
-            supports.push(...ethSupports);
+            campaign.transactions.push(...ethSupports);
         }
+        debugger;
 
-        // const avalancheSupports = await fetchAvalancheSupports(campaign.avalancheAddress);
-        const avalancheSupports = await fetchAvalancheSupports('0x2E36833DE3C60FA50A40dE6FAa1d97Be299baf2A');
-        supports.push(...avalancheSupports);
+        if (campaign.avalancheAddress) {
+            // const avalancheSupports = await fetchAvalancheSupports(campaign.avalancheAddress);
+            const avalancheSupports = await fetchAvalancheSupports('0x2E36833DE3C60FA50A40dE6FAa1d97Be299baf2A');
+            campaign.transactions.push(...avalancheSupports);
 
-        supports = supports.sort((s1, s2) => s2.when - s1.when);
-
-        supportsByCampaignId.push({
-            campaignId: campaign.campaignId,
-            supports,
-        });
+            campaign.transactions = campaign.transactions.sort((s1, s2) => s2.when - s1.when);
+        }
+        await updateCampaign(campaign);
     }
-
-    console.log(JSON.stringify(supportsByCampaignId));
 }
-
 main();

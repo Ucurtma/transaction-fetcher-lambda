@@ -1,5 +1,7 @@
 {
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.21.0",
+    "aws-sdk": "^2.947.0",
     "axios": "^0.21.1",
     "cheerio": "^1.0.0-rc.10",
     "dotenv": "^10.0.0",
