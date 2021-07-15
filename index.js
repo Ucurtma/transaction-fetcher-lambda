@@ -1,22 +1,9 @@
 require('dotenv').config();
 const axios = require('axios').default;
 const cheerio = require('cheerio');
-const { ethers } = require("ethers");
 const moment = require('moment');
 const { fetchCampaigns, updateCampaign } = require('./lib/data/campaigns');
-const fetchEthereumSupports = async (address) => {
-    const response = await axios.get(`https://api.etherscan.io/api?module=account&action=tokentx&address=${campaign.ethereumAddress}&startblock=0&endblock=999999999&sort=desc&apikey=${process.env.ETHERSCAN_KEY}`);
-
-    return response.data.result.map(transaction => {
-        return {
-            from: transaction.from,
-            amount: ethers.utils.formatUnits(transaction.value, transaction.tokenDecimal),
-            tokenName: transaction.tokenName,
-            type: transaction.to == address ? 'IN' : 'OUT',
-            when: (transaction.timeStamp * 1000), // convert to ms
-        };
-    });
-};
+const { fetchEthereumSupports, getTotalFundsFromEthereum, getCampaignEndDate, getCampaignWithdrawPeriod } = require('./lib/ethereum-clients');
 
 const fetchAvalancheSupports = async (address) => {
     const parseTransactions = (response) => {
@@ -56,18 +43,41 @@ const fetchAvalancheSupports = async (address) => {
     return transactions;
 };
 
+const getCampaignEthereumAttributes = async (campaign) => {
+    if (campaign.ethereumAddress) {
+        const ethSupports = await fetchEthereumSupports(campaign.ethereumAddress);
+        campaign.transactions.push(...ethSupports);
+    }
+    if (campaign.fundingType === 'long-term') {
+        campaign.totalFunds = await getTotalFundsFromEthereum(
+            campaign.ethereumAddress
+        );
+    }
+    campaign.endDate = await getCampaignEndDate(campaign.ethereumAddress);
+
+    if (campaign.campaignType === 'LongTerm') {
+        campaign.endDate += await getCampaignWithdrawPeriod(
+            campaign.ethereumAddress
+        );
+    }
+    return campaign;
+};
+
 const main = async () => {
     const campaigns = await fetchCampaigns();
 
-    for (campaign of campaigns.filter(c => c.isActive)) {
+    for (campaign of campaigns) {
+        console.log(`Filling for ${campaign.campaignId}`);
         campaign.transactions = [];
 
         if (campaign.ethereumAddress) {
-            const ethSupports = await fetchEthereumSupports(campaign.ethereumAddress);
-            campaign.transactions.push(...ethSupports);
+            try {
+                campaign = await getCampaignEthereumAttributes(campaign);
+            }
+            catch (e) {
+                console.log(`Error occcured on ${campaign.campaignId}. Skipping...`);
+            }
         }
-        debugger;
-
         if (campaign.avalancheAddress) {
             // const avalancheSupports = await fetchAvalancheSupports(campaign.avalancheAddress);
             const avalancheSupports = await fetchAvalancheSupports('0x2E36833DE3C60FA50A40dE6FAa1d97Be299baf2A');
