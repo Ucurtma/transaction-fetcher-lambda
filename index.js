@@ -47,6 +47,7 @@ const main = async () => {
     let count = 0;
     const totalCount = campaigns.length;
     console.log(`Total number of campaigns to fill: ${totalCount}`);
+    const errorList = [];
     for (campaign of campaigns) {
         console.log(`Filling for ${campaign.campaignId} (${++count}/${totalCount})`);
         campaign.transactions = [];
@@ -57,6 +58,11 @@ const main = async () => {
             }
             catch (e) {
                 console.log(`Error occcured on ${campaign.campaignId}. Skipping...`);
+                errorList.push({
+                    campaignId: campaign.campaignId,
+                    source: 'ethereum',
+                    error: e
+                });
             }
         }
         if (campaign.avalancheAddress) {
@@ -65,12 +71,20 @@ const main = async () => {
                 campaign = await getCampaignAvalancheAttributes(campaign);
             }
             catch (e) {
-                debugger;
                 console.log(`Error occcured on ${campaign.campaignId}. Skipping... \nError: \n\t${e}`);
+                errorList.push({
+                    campaignId: campaign.campaignId,
+                    source: 'avalanche',
+                    error: e
+                });
             }
         }
         campaign.transactions = campaign.transactions.sort((s1, s2) => s2.when - s1.when);
         await updateCampaign(campaign);
     }
+    console.log(`Done. Failed records:`);
+    errorList.map(item => {
+        console.log(`\t${item.campaignId} (${item.source})`);
+    });
 }
 main();
