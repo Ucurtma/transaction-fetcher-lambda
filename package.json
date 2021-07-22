@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "start": "node index.js"
+  },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.21.0",
     "aws-sdk": "^2.947.0",
