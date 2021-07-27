@@ -33,12 +33,9 @@ const getCampaignAvalancheAttributes = async (campaign) => {
         );
     }
     campaign.endDate = await getCampaignEndDateFromAvalanche(campaign.avalancheAddress);
-
-    if (campaign.campaignType === 'LongTerm') {
-        campaign.endDate += await getCampaignWithdrawPeriodFromAvalanche(
-            campaign.avalancheAddress
-        );
-    }
+    campaign.endDate += await getCampaignWithdrawPeriodFromAvalanche(
+        campaign.avalancheAddress
+    );
     return campaign;
 };
 
