@@ -35,7 +35,7 @@ module "transaction-fetcher-lambda" {
 
   event = {
     type                = "cloudwatch-event"
-    schedule_expression = "rate(2 hours)"
+    schedule_expression = "rate(30 minutes)"
   }
 
   environment = {
