@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "start": "node index.js"
+    "start": "node fetch-transactions.js"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.21.0",
