@@ -1,2 +1,2 @@
-const { index } = require('./fetch-transactions');
+const { index } = require('./fetchTransactions');
 index();

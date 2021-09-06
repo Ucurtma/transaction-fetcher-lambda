@@ -27,15 +27,19 @@ const getCampaignAvalancheAttributes = async (campaign) => {
     const avalancheSupports = await fetchAvalancheSupports(campaign.avalancheAddress);
     campaign.transactions.push(...avalancheSupports);
 
-    if (campaign.fundingType === 'long-term') {
-        campaign.totalFunds = await getTotalFundsFromAvalanche(
+    try {
+        if (campaign.fundingType === 'long-term') {
+            campaign.totalFunds = await getTotalFundsFromAvalanche(
+                campaign.avalancheAddress
+            );
+        }
+        campaign.endDate = await getCampaignEndDateFromAvalanche(campaign.avalancheAddress);
+        campaign.endDate += await getCampaignWithdrawPeriodFromAvalanche(
             campaign.avalancheAddress
         );
+    } catch (e) {
+        console.log(`Error occcured on ${campaign.campaignId}. Skipping Avalanche reading...`);
     }
-    campaign.endDate = await getCampaignEndDateFromAvalanche(campaign.avalancheAddress);
-    campaign.endDate += await getCampaignWithdrawPeriodFromAvalanche(
-        campaign.avalancheAddress
-    );
     return campaign;
 };
 
