@@ -1,7 +1,7 @@
 require('dotenv').config();
 const { fetchCampaigns, updateCampaign } = require('./lib/data/campaigns');
 const { fetchEthereumSupports, getTotalFundsFromEthereum, getCampaignEndDate, getCampaignWithdrawPeriod } = require('./lib/ethereum-clients');
-const { fetchAvalancheSupports, getTotalFundsFromAvalanche, getCampaignEndDateFromAvalanche, getCampaignWithdrawPeriodFromAvalanche } = require('./lib/avalanche-clients');
+const { getTotalFundsFromAvalanche, getCampaignEndDateFromAvalanche, getCampaignWithdrawPeriodFromAvalanche, fetchAvalancheSupportsFromSnowTrace } = require('./lib/avalanche-clients');
 
 const getCampaignEthereumAttributes = async (campaign) => {
     if (campaign.ethereumAddress) {
@@ -24,7 +24,7 @@ const getCampaignEthereumAttributes = async (campaign) => {
 };
 
 const getCampaignAvalancheAttributes = async (campaign) => {
-    const avalancheSupports = await fetchAvalancheSupports(campaign.avalancheAddress);
+    const avalancheSupports = await fetchAvalancheSupportsFromSnowTrace(campaign.avalancheAddress);
     campaign.transactions.push(...avalancheSupports);
 
     try {
